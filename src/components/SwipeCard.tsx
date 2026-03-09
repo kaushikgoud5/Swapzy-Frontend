@@ -19,7 +19,7 @@ export function SwipeCard({ product, onSwipe, onDetailView, style, isSaved }: Sw
   const rotate = useTransform(x, [-200, 0, 200], [-20, 0, 20]);
   const opacity = useTransform(x, [-200, -100, 0, 100, 200], [0, 1, 1, 1, 0]);
 
-  const handleDragEnd = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+  const handleDragEnd = (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     const threshold = 100;
     
     if (Math.abs(info.offset.x) > threshold) {
