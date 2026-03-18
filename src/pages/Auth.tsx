@@ -2,6 +2,10 @@ import { useState } from 'react';
 import { FloatingBackground } from '../components/FloatingBackground';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Mail, Sparkles, Lock, EyeOff, Eye, ArrowRight, Github } from 'lucide-react';
+import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
+import { login, signup, clearError } from '../store/slices/AuthSlice';
+import type { AppDispatch, RootState } from '../store/store';
 
 const GoogleIcon = () => (
   <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -19,21 +23,20 @@ export function Auth() {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const dispatch = useDispatch<AppDispatch>();
+  const navigate = useNavigate();
+  const { loading, error } = useSelector((state: RootState) => state.auth);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isLogin) {
-      onLogin();
-    } else {
-      onSignup();
+    const action = isLogin
+      ? dispatch(login({ email, password }))
+      : dispatch(signup({ email, password, name }));
+    const result = await action;
+    if (result.meta.requestStatus === 'fulfilled') {
+      navigate('/profile');
     }
   };
-
-  const onLogin = ()=>{
-
-  }
-
-   const onSignup = ()=>{ 
-  }
 
   const socialButtons = [
     { name: 'Google', gradient: 'from-red-500 to-pink-500', Icon: GoogleIcon },
@@ -88,6 +91,16 @@ export function Auth() {
             {/* Gradient Border Effect */}
             <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-purple-200 via-pink-200 to-blue-200 opacity-20 -z-10 blur-xl" />
             
+            {error && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mb-4 p-3 bg-red-50 border border-red-200 rounded-2xl text-sm text-red-600"
+              >
+                {error}
+              </motion.div>
+            )}
+
             <form onSubmit={handleSubmit} className="space-y-5">
               <AnimatePresence mode="wait">
                 {!isLogin && (
@@ -175,12 +188,13 @@ export function Auth() {
               {/* Submit Button */}
               <motion.button
                 type="submit"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="cursor-pointer w-full py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-2xl shadow-lg hover:shadow-xl transition-shadow flex items-center justify-center gap-2 group"
+                disabled={loading}
+                whileHover={{ scale: loading ? 1 : 1.02 }}
+                whileTap={{ scale: loading ? 1 : 0.98 }}
+                className="cursor-pointer w-full py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-2xl shadow-lg hover:shadow-xl transition-shadow flex items-center justify-center gap-2 group disabled:opacity-70"
               >
-                {isLogin ? 'Log in' : 'Create account'}
-                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                {loading ? 'Please wait...' : isLogin ? 'Log in' : 'Create account'}
+                {!loading && <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />}
               </motion.button>
             </form>
 
@@ -205,13 +219,6 @@ export function Auth() {
                   transition={{ delay: 0.3 + index * 0.1 }}
                   whileHover={{ scale: 1.05, y: -2 }}
                   whileTap={{ scale: 0.95 }}
-                  onClick={() => {
-                    if (isLogin) {
-                      onLogin();
-                    } else {
-                      onSignup();
-                    }
-                  }}
                   className={`py-3 bg-gradient-to-r ${social.gradient} text-white rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center cursor-pointer`}
                 >
                   <social.Icon className="w-5 h-5" />
@@ -231,7 +238,7 @@ export function Auth() {
                 {' '}
                 <button
                   type="button"
-                  onClick={() => setIsLogin(!isLogin)}
+                  onClick={() => { setIsLogin(!isLogin); dispatch(clearError()); }}
                   className="cursor-pointer text-purple-600 hover:text-purple-700 transition-colors"
                 >
                   {isLogin ? 'Sign up' : 'Log in'}
